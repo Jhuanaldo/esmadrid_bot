@@ -80,6 +80,17 @@ def should_send_today(config: dict) -> bool:
     return False
 
 
+MAX_LENGTH = 4000
+
+
+async def send_long_message(chat_id: int, text: str, app: Application):
+    if len(text) <= MAX_LENGTH:
+        await app.bot.send_message(chat_id=chat_id, text=text)
+        return
+    for i in range(0, len(text), MAX_LENGTH):
+        await app.bot.send_message(chat_id=chat_id, text=text[i:i + MAX_LENGTH])
+
+
 async def send_report_to_user(app: Application, user_id: int):
     config = load_user_config(user_id)
     if not config:
@@ -90,7 +101,7 @@ async def send_report_to_user(app: Application, user_id: int):
     else:
         text = xml_utils.format_events(events)
     try:
-        await app.bot.send_message(chat_id=user_id, text=text)
+        await send_long_message(user_id, text, app)
     except Exception as e:
         logger.error(f"Error sending to {user_id}: {e}")
 
@@ -133,7 +144,7 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = "No hay planes que coincidan con tus filtros."
     else:
         text = xml_utils.format_events(events)
-    await update.message.reply_text(text)
+    await send_long_message(user_id, text, context.application)
 
 
 async def ask_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):

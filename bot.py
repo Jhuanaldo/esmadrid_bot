@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, time, timedelta
 from zoneinfo import ZoneInfo
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -26,11 +26,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+TOKEN = os.environ["ESMADRID_BOT_TOKEN"]
 MADRID_TZ = ZoneInfo("Europe/Madrid")
 
-
-async def fetch_and_filter_job():
+async def fetch_and_filter_job(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Fetching XML...")
     try:
         content = xml_utils.fetch_xml()
@@ -96,10 +95,11 @@ async def send_report_to_user(app: Application, user_id: int):
         logger.error(f"Error sending to {user_id}: {e}")
 
 
-async def scheduled_report(app: Application):
+async def scheduled_report(context: ContextTypes.DEFAULT_TYPE):
     today_str = datetime.now(MADRID_TZ).strftime("%Y-%m-%d %A")
     logger.info(f"Running scheduled report for {today_str}")
 
+    app = context.application
     users_dir = __import__("config").USERS_DIR
     for f in users_dir.iterdir():
         if f.suffix == ".json":
@@ -327,16 +327,14 @@ def main():
 
     app.job_queue.run_daily(
         fetch_and_filter_job,
-        time=datetime.strptime("08:00", "%H:%M").time(),
+        time=time(8, 0, tzinfo=MADRID_TZ),
         days=tuple(range(7)),
-        timezone=MADRID_TZ,
     )
 
     app.job_queue.run_daily(
         scheduled_report,
-        time=datetime.strptime("10:00", "%H:%M").time(),
+        time=time(10, 0, tzinfo=MADRID_TZ),
         days=tuple(range(7)),
-        timezone=MADRID_TZ,
     )
 
     logger.info("Bot started")

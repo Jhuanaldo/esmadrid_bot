@@ -321,7 +321,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("config", config))
     app.add_handler(CommandHandler("report", report))
-    app.add_handler(CallbackQueryHandler(category_callback, pattern="^(cat_|sub_|done_cats|back_to_cats)$"))
+    app.add_handler(CallbackQueryHandler(category_callback, pattern="^(cat_|sub_|done_cats|back_to_cats)"))
     app.add_handler(CallbackQueryHandler(range_callback, pattern="^range_"))
     app.add_handler(CallbackQueryHandler(freq_callback, pattern="^freq_"))
 

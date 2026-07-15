@@ -1,0 +1,4 @@
+python-telegram-bot==20.8
+apscheduler==3.10.4
+pytz==2024.1
+requests==2.31.0

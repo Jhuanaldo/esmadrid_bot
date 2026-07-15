@@ -10,3 +10,6 @@ env/
 dist/
 build/
 .DS_Store
+madrid_es_filtered.xml
+users/
+

@@ -120,14 +120,13 @@ def load_filtered_data() -> list[dict]:
 
 def format_events(events: list[dict]) -> str:
     lines = []
-    for ev in sorted(events, key=lambda e: (e["name"] or "").lower()):
+    for ev in events:
         for cat, subcat in ev["categorias"]:
-            cat_str = cat
-            if subcat:
-                cat_str += f", {subcat}"
+            cat_str = f"{cat}, {subcat}" if subcat else cat
             lines.append(
                 f"- {cat_str}: {ev['name']}, {ev['inicio']} - {ev['fin']} ({ev['web']})"
             )
+    lines.sort(key=lambda l: l.lower().lstrip("- "))
     return "\n".join(lines)
 
 

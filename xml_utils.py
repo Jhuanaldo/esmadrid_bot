@@ -1,3 +1,4 @@
+import html
 import xml.etree.ElementTree as ET
 from datetime import datetime, date
 from pathlib import Path
@@ -54,7 +55,7 @@ def filter_and_save(xml_content: bytes, output_path: Path):
                 el = basic.find(tag)
                 if el is not None:
                     el_out = ET.SubElement(basic_out, tag)
-                    el_out.text = el.text
+                    el_out.text = decode(el.text)
 
         extra = service.find("extradata")
         if extra is not None:
@@ -84,15 +85,15 @@ def load_filtered_data() -> list[dict]:
     events = []
 
     for service in root.findall("service"):
-        name = service.findtext("basicData/name", "")
-        web = service.findtext("basicData/web", "")
+        name = decode(service.findtext("basicData/name", ""))
+        web = decode(service.findtext("basicData/web", ""))
 
         cats = []
         for cat in service.findall(".//categorias/categoria"):
-            cat_name = cat.findtext('item[@name="Categoria"]', "")
+            cat_name = decode(cat.findtext('item[@name="Categoria"]', ""))
             sub_names = []
             for sub in cat.findall(".//subcategoria"):
-                sn = sub.findtext('item[@name="SubCategoria"]', "")
+                sn = decode(sub.findtext('item[@name="SubCategoria"]', ""))
                 if sn:
                     sub_names.append(sn)
             if cat_name:
@@ -102,12 +103,9 @@ def load_filtered_data() -> list[dict]:
                 else:
                     cats.append((cat_name, ""))
 
-        inicio = ""
-        fin = ""
         rango = service.find(".//fechas/rango")
-        if rango is not None:
-            inicio = rango.findtext("inicio", "")
-            fin = rango.findtext("fin", "")
+        inicio = decode(rango.findtext("inicio", "")) if rango is not None else ""
+        fin = decode(rango.findtext("fin", "")) if rango is not None else ""
 
         events.append({
             "name": name,
@@ -133,19 +131,23 @@ def format_events(events: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def decode(val: str | None) -> str:
+    return html.unescape(val) if val else ""
+
+
 def get_categories() -> dict[str, list[str]]:
     raw = fetch_xml()
     root = ET.fromstring(raw)
     categories: dict[str, set[str]] = {}
     for service in root.findall(".//service"):
         for cat in service.findall(".//categorias/categoria"):
-            cat_name = cat.findtext('item[@name="Categoria"]', "")
+            cat_name = decode(cat.findtext('item[@name="Categoria"]', ""))
             if not cat_name:
                 continue
             if cat_name not in categories:
                 categories[cat_name] = set()
             for sub in cat.findall(".//subcategoria"):
-                sub_name = sub.findtext('item[@name="SubCategoria"]', "")
+                sub_name = decode(sub.findtext('item[@name="SubCategoria"]', ""))
                 if sub_name:
                     categories[cat_name].add(sub_name)
     return {k: sorted(v) for k, v in sorted(categories.items())}

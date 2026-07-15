@@ -140,8 +140,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ask_categories(update, context)
 
 
-async def config(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await start(update, context)
+
+
+async def config(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    cfg = load_user_config(user_id)
+    if not cfg:
+        await update.message.reply_text(
+            "No tienes configuración guardada. Usa /start para configurar."
+        )
+        return
+    summary = format_config_summary(cfg)
+    await update.message.reply_text(
+        f"{summary}\n\n"
+        f"📬 Recibirás el informe a las **10:00** (hora española).\n"
+        f"Usa /setting para cambiar tu configuración."
+    )
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -338,7 +354,7 @@ async def freq_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✅ Configuración guardada correctamente.\n\n"
             f"{summary}\n\n"
             f"📬 Recibirás el informe a las **10:00** (hora española).\n"
-            f"Usa /config para cambiar tu configuración o /report para consultar ahora."
+            f"Usa /setting para cambiar tu configuración o /report para consultar ahora."
         )
 
 
@@ -347,6 +363,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("config", config))
+    app.add_handler(CommandHandler("setting", setting))
     app.add_handler(CommandHandler("report", report))
     app.add_handler(CallbackQueryHandler(category_callback, pattern="^(cat_|sub_|done_cats|back_to_cats)"))
     app.add_handler(CallbackQueryHandler(range_callback, pattern="^range_"))

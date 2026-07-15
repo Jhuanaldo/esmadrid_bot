@@ -41,6 +41,9 @@ async def fetch_and_filter_job(context: ContextTypes.DEFAULT_TYPE):
 
 def get_events_for_user(config: dict) -> list[dict]:
     all_events = xml_utils.load_filtered_data()
+    if not all_events:
+        xml_utils.ensure_xml()
+        all_events = xml_utils.load_filtered_data()
     selected = config.get("categorias", [])
 
     def match(event):
@@ -359,6 +362,7 @@ async def freq_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    xml_utils.ensure_xml()
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))

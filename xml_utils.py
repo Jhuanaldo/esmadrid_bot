@@ -75,6 +75,13 @@ def filter_and_save(xml_content: bytes, output_path: Path):
     tree.write(output_path, encoding="utf-8", xml_declaration=True)
 
 
+def ensure_xml():
+    path = Path(__file__).parent / "madrid_es_filtered.xml"
+    if not path.exists():
+        content = fetch_xml()
+        filter_and_save(content, path)
+
+
 def load_filtered_data() -> list[dict]:
     path = Path(__file__).parent / "madrid_es_filtered.xml"
     if not path.exists():

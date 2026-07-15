@@ -65,6 +65,19 @@ def get_events_for_user(config: dict) -> list[dict]:
     return filtered
 
 
+def format_config_summary(config: dict) -> str:
+    cats = config.get("categorias", [])
+    range_label = TIME_RANGES.get(config.get("rango", "1"), [""])[0]
+    freq_label = FREQUENCIES.get(config.get("frecuencia", "1"), ["", ""])[0]
+    lines = [
+        "📋 **Tu configuración:**",
+        f"  • Categorías: {len(cats)} seleccionadas",
+        f"  • Rango: {range_label}",
+        f"  • Frecuencia: {freq_label}",
+    ]
+    return "\n".join(lines)
+
+
 def should_send_today(config: dict) -> bool:
     freq = FREQUENCIES.get(config.get("frecuencia", "1"))
     if freq is None:
@@ -320,9 +333,12 @@ async def freq_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         save_user_config(user_id, config)
 
+        summary = format_config_summary(config)
         await query.edit_message_text(
-            "✅ Configuración guardada correctamente.\n\n"
-            "Usa /report para consultar ahora mismo."
+            f"✅ Configuración guardada correctamente.\n\n"
+            f"{summary}\n\n"
+            f"📬 Recibirás el informe a las **10:00** (hora española).\n"
+            f"Usa /config para cambiar tu configuración o /report para consultar ahora."
         )
 
 

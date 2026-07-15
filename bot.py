@@ -145,7 +145,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def setting(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await start(update, context)
+    user_id = update.effective_user.id
+    context.user_data.clear()
+    context.user_data["user_id"] = user_id
+    cfg = load_user_config(user_id)
+    if cfg:
+        context.user_data["selected_cats"] = cfg.get("categorias", [])
+        context.user_data["rango"] = cfg.get("rango", "1")
+        context.user_data["frecuencia"] = cfg.get("frecuencia", "1")
+    await ask_categories(update, context)
 
 
 async def config(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -180,13 +188,21 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_long_message(user_id, text, context.application)
 
 
-async def ask_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def build_category_keyboard(context) -> list:
     cats = xml_utils.get_categories()
+    selected = context.user_data.get("selected_cats", [])
     keyboard = []
     for cat, subs in cats.items():
-        display = f"📁 {cat} ({len(subs)} subcategorías)" if subs else f"📁 {cat}"
-        keyboard.append([InlineKeyboardButton(display, callback_data=f"cat_{cat}")])
+        count = sum(1 for c, s in selected if c == cat)
+        suffix = f" ({count}✓)" if count else ""
+        label = f"📁 {cat}{suffix}" if not subs else f"📁 {cat}{suffix}"
+        keyboard.append([InlineKeyboardButton(label, callback_data=f"cat_{cat}")])
     keyboard.append([InlineKeyboardButton("✅ He terminado", callback_data="done_cats")])
+    return keyboard
+
+
+async def ask_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = build_category_keyboard(context)
     await update.message.reply_text(
         "Selecciona una categoría para ver sus subcategorías:",
         reply_markup=InlineKeyboardMarkup(keyboard),
@@ -265,16 +281,7 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif data == "back_to_cats":
-        cats = xml_utils.get_categories()
-        keyboard = []
-        for cat, subs in cats.items():
-            display = f"📁 {cat} ({len(subs)})" if subs else f"📁 {cat}"
-            keyboard.append(
-                [InlineKeyboardButton(display, callback_data=f"cat_{cat}")]
-            )
-        keyboard.append(
-            [InlineKeyboardButton("✅ He terminado", callback_data="done_cats")]
-        )
+        keyboard = build_category_keyboard(context)
         await query.edit_message_text(
             text=f"Selecciona una categoría:\n\n{format_selection_summary(context)}",
             reply_markup=InlineKeyboardMarkup(keyboard),

@@ -47,26 +47,22 @@ def get_events_for_user(config: dict) -> list[dict]:
         all_events = xml_utils.load_filtered_data()
     selected = config.get("categorias", [])
 
-    def match(event):
-        for cat, subcat in event["categorias"]:
-            if [cat, subcat] in selected:
-                return True
-        return False
-
-    filtered = [e for e in all_events if match(e)]
-
     range_days = TIME_RANGES.get(config.get("rango", "1"))
-    if range_days:
-        days = range_days[1]
-        today = date.today()
-        end_date = today + timedelta(days=days)
-        result = []
-        for ev in filtered:
+    days = range_days[1] if range_days else 0
+    today = date.today()
+    end_date = today + timedelta(days=days) if days else None
+
+    result = []
+    for ev in all_events:
+        matching_cats = [(c, s) for c, s in ev["categorias"] if [c, s] in selected]
+        if not matching_cats:
+            continue
+        if end_date:
             ev_start = xml_utils.parse_date_es(ev["inicio"])
-            if ev_start and today <= ev_start <= end_date:
-                result.append(ev)
-        return result
-    return filtered
+            if not ev_start or not (today <= ev_start <= end_date):
+                continue
+        result.append({**ev, "categorias": matching_cats})
+    return result
 
 
 def format_config_summary(config: dict) -> str:

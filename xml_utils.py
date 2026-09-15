@@ -125,14 +125,43 @@ def load_filtered_data() -> list[dict]:
     return events
 
 
+def event_key(ev: dict) -> str:
+    web = decode(ev.get("web", "")).strip()
+    if web:
+        return web
+    return f"{ev['name']}|{ev['inicio']}|{ev['fin']}"
+
+
+def format_categories(cats: list[tuple[str, str]]) -> str:
+    grouped: dict[str, list[str]] = {}
+    for cat, subcat in cats:
+        subs = grouped.setdefault(cat, [])
+        if subcat and subcat not in subs:
+            subs.append(subcat)
+    parts = []
+    for cat, subs in grouped.items():
+        parts.append(f"{cat}, {'/'.join(subs)}" if subs else cat)
+    return " | ".join(parts)
+
+
 def format_events(events: list[dict]) -> str:
-    lines = []
+    merged: dict[str, dict] = {}
     for ev in events:
-        for cat, subcat in ev["categorias"]:
-            cat_str = f"{cat}, {subcat}" if subcat else cat
-            lines.append(
-                f"- {cat_str}: {ev['name']}, {ev['inicio']} - {ev['fin']} ({ev['web']})"
-            )
+        key = event_key(ev)
+        if key not in merged:
+            merged[key] = {**ev, "categorias": list(ev["categorias"])}
+        else:
+            cats = merged[key]["categorias"]
+            for cat_pair in ev["categorias"]:
+                if cat_pair not in cats:
+                    cats.append(cat_pair)
+
+    lines = []
+    for ev in merged.values():
+        cat_str = format_categories(ev["categorias"])
+        lines.append(
+            f"- {cat_str}: {ev['name']}, {ev['inicio']} - {ev['fin']} ({ev['web']})"
+        )
     lines.sort(key=lambda l: l.lower().lstrip("- "))
     return "\n".join(lines)
 
